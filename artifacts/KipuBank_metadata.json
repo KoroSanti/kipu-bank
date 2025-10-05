@@ -6,18 +6,7 @@
 	"output": {
 		"abi": [
 			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "_withdrawalLimit",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_bankCap",
-						"type": "uint256"
-					}
-				],
+				"inputs": [],
 				"stateMutability": "nonpayable",
 				"type": "constructor"
 			},
@@ -341,145 +330,8 @@
 			}
 		],
 		"devdoc": {
-			"author": "Rodriguez Santiago",
-			"errors": {
-				"BankCapExceeded(uint256,uint256)": [
-					{
-						"details": "Protege al banco de crecer sin límite",
-						"params": {
-							"attempted": "Cantidad que se intentó depositar",
-							"available": "Espacio disponible en el banco antes de alcanzar el cap"
-						}
-					}
-				],
-				"DepositTooSmall(uint256,uint256)": [
-					{
-						"details": "Los errores personalizados ahorran gas comparado con require con strings Solidity 0.8.4+ soporta errores personalizados",
-						"params": {
-							"minimum": "Cantidad mínima requerida (MINIMUM_DEPOSIT)",
-							"sent": "Cantidad que el usuario intentó depositar"
-						}
-					}
-				],
-				"InsufficientBalance(uint256,uint256)": [
-					{
-						"details": "Previene retiros que dejarían el balance negativo",
-						"params": {
-							"available": "Balance actual del usuario en su bóveda",
-							"requested": "Cantidad que el usuario quiere retirar"
-						}
-					}
-				],
-				"InsufficientBankLiquidity(uint256,uint256)": [
-					{
-						"details": "Situación poco común, pero puede ocurrir en casos extremos",
-						"params": {
-							"available": "ETH disponible en el contrato",
-							"requested": "Cantidad solicitada para retirar"
-						}
-					}
-				],
-				"TransferFailed()": [
-					{
-						"details": "Se lanza cuando la llamada de bajo nivel (call) falla Puede ocurrir si: - El destinatario es un contrato sin función receive/fallback - El destinatario rechaza el ETH - Se agota el gas"
-					}
-				],
-				"WithdrawalLimitExceeded(uint256,uint256)": [
-					{
-						"details": "Mecanismo de seguridad para prevenir drenado masivo",
-						"params": {
-							"limit": "Límite máximo permitido (withdrawalLimit)",
-							"requested": "Cantidad que el usuario quiere retirar"
-						}
-					}
-				],
-				"ZeroAmount()": [
-					{
-						"details": "Previene transacciones innecesarias que desperdiciarían gas"
-					}
-				]
-			},
-			"events": {
-				"Deposit(address,uint256,uint256)": {
-					"details": "Los eventos son importantes porque: - Permiten que las dApps escuchen cambios en tiempo real - Se pueden indexar para búsquedas eficientes (indexed) - Cuestan menos gas que almacenar en storage",
-					"params": {
-						"amount": "Cantidad de ETH depositada en wei",
-						"newBalance": "Nuevo balance total del usuario después del depósito",
-						"user": "Dirección del usuario que realizó el depósito"
-					}
-				},
-				"Withdrawal(address,uint256,uint256)": {
-					"details": "indexed permite filtrar eventos por dirección de usuario específica",
-					"params": {
-						"amount": "Cantidad de ETH retirada en wei",
-						"remainingBalance": "Balance que le queda al usuario después del retiro",
-						"user": "Dirección del usuario que realizó el retiro"
-					}
-				}
-			},
 			"kind": "dev",
-			"methods": {
-				"constructor": {
-					"details": "El constructor se ejecuta una sola vez al desplegar el contrato  Validaciones: - withdrawalLimit debe ser > 0 - bankCap debe ser > 0 - withdrawalLimit no puede ser mayor que bankCap  Ejemplo de despliegue: new KipuBank(1 ether, 100 ether) - Permite retiros de máximo 1 ETH por transacción - Capacidad total del banco: 100 ETH",
-					"params": {
-						"_bankCap": "Capacidad máxima total del banco (en wei)",
-						"_withdrawalLimit": "Límite máximo que se puede retirar por transacción (en wei)"
-					}
-				},
-				"deposit()": {
-					"details": "Función payable que acepta ETH junto con la llamada  PATRÓN CHECKS-EFFECTS-INTERACTIONS (CEI): ========================================== Este patrón es crucial para la seguridad contra ataques de reentrancia  1. CHECKS: Todas las validaciones primero 2. EFFECTS: Cambios en el estado del contrato 3. INTERACTIONS: Llamadas externas y eventos  Validaciones realizadas: - msg.value debe ser > 0 (modificador) - msg.value debe ser >= MINIMUM_DEPOSIT - El depósito no debe exceder el espacio disponible en el banco  Efectos: - Incrementa vaults[msg.sender] con el valor depositado - Incrementa totalBankBalance - Incrementa totalDeposits  Ejemplo de uso desde web3: await contract.deposit({ value: ethers.utils.parseEther(\"1.0\") })"
-				},
-				"getBankStats()": {
-					"details": "Función view útil para dashboards, análisis y monitoreo  Esta información es valiosa para: - Mostrar estadísticas en la interfaz - Análisis de uso del banco - Saber si el banco está cerca del límite - Auditoría de actividad  Ejemplo de uso en un dashboard: const stats = await contract.getBankStats() console.log(`Total depositado: ${ethers.utils.formatEther(stats.totalBalance)} ETH`) console.log(`Operaciones totales: ${stats.depositsCount + stats.withdrawalsCount}`)",
-					"returns": {
-						"depositsCount": "Número total de depósitos desde el despliegue",
-						"remainingCapacity": "Espacio disponible antes de alcanzar bankCap (en wei)",
-						"totalBalance": "Balance total de ETH en el banco (en wei)",
-						"withdrawalsCount": "Número total de retiros desde el despliegue"
-					}
-				},
-				"getUserInfo(address)": {
-					"details": "Función VIEW: no modifica el estado, solo lee  Las funciones view: - No consumen gas cuando se llaman desde fuera de la blockchain (RPC) - Consumen gas si son llamadas por otra función que modifica estado - Pueden leer variables de estado pero no modificarlas - Útiles para interfaces de usuario (dApps)  Esta función es útil para que un frontend muestre: - Cuánto ETH tiene el usuario depositado - Cuánto puede retirar máximo ahora - Si necesitará hacer múltiples retiros para sacar todo  Ejemplo de uso: const [balance, maxW, canWithdrawAll] = await contract.getUserInfo(userAddress)",
-					"params": {
-						"user": "Dirección del usuario a consultar"
-					},
-					"returns": {
-						"canWithdrawFully": "Si puede retirar todo su balance de una sola vez",
-						"maxWithdrawal": "Máximo que puede retirar en una transacción (en wei)",
-						"userBalance": "Balance actual del usuario en su bóveda (en wei)"
-					}
-				},
-				"withdraw(uint256)": {
-					"details": "Función crítica que implementa múltiples capas de seguridad  SEGURIDAD: ========== 1. Sigue el patrón CEI estrictamente 2. Usa call en lugar de transfer (más seguro post-Estambul) 3. Actualiza el estado ANTES de enviar ETH 4. Múltiples validaciones  Validaciones: - amount debe ser > 0 (modificador) - Usuario debe tener suficiente balance en su bóveda - amount no debe exceder withdrawalLimit - El banco debe tener suficiente liquidez  ¿Por qué usar call en lugar de transfer? - transfer: envía 2300 gas fijo (insuficiente para contratos complejos) - send: igual que transfer pero retorna bool - call: flexible, envía todo el gas disponible, más seguro  Ejemplo: await contract.withdraw(ethers.utils.parseEther(\"0.5\"))",
-					"params": {
-						"amount": "Cantidad de ETH a retirar en wei"
-					}
-				}
-			},
-			"stateVariables": {
-				"MINIMUM_DEPOSIT": {
-					"details": "Constante: usa menos gas que una variable inmutable Las constantes se calculan en tiempo de compilación Establecido en 0.001 ETH para evitar spam de micro-transacciones"
-				},
-				"bankCap": {
-					"details": "Variable inmutable: previene que el banco crezca sin control Una vez alcanzado este límite, no se aceptan más depósitos Ejemplo: Si bankCap = 100 ether, el banco no puede tener más de 100 ETH"
-				},
-				"totalBankBalance": {
-					"details": "Se actualiza en cada depósito (+) y retiro (-) Esta variable rastrea cuánto ETH hay en total en todas las bóvedas Debe ser siempre <= bankCap"
-				},
-				"totalDeposits": {
-					"details": "Útil para: - Estadísticas del banco - Auditoría de actividad - Análisis de uso Se incrementa en 1 con cada depósito exitoso"
-				},
-				"totalWithdrawals": {
-					"details": "Similar a totalDeposits, permite rastrear la actividad de retiros Se incrementa en 1 con cada retiro exitoso"
-				},
-				"vaults": {
-					"details": "Estructura: mapping(dirección del usuario => balance en wei)  Cada usuario tiene su propia \"caja fuerte\" independiente - Key: address del usuario (dirección de Ethereum) - Value: uint256 balance en wei (1 ether = 10^18 wei)  Ejemplo: vaults[0x123...] = 5000000000000000000 (5 ETH) vaults[0x456...] = 1000000000000000000 (1 ETH)"
-				},
-				"withdrawalLimit": {
-					"details": "Variable inmutable: se establece en el constructor y nunca cambia Esto ahorra gas porque no necesita ser leída desde storage Ejemplo: Si se establece en 1 ether, nadie puede retirar más de 1 ETH por transacción"
-				}
-			},
-			"title": "KipuBank",
+			"methods": {},
 			"version": 1
 		},
 		"userdoc": {
@@ -537,7 +389,7 @@
 					"notice": "Capacidad máxima total de ETH que puede almacenar el banco"
 				},
 				"constructor": {
-					"notice": "Inicializa el contrato con los límites del banco"
+					"notice": "Inicializa el contrato con los límites del banco predefinidos"
 				},
 				"deposit()": {
 					"notice": "Permite a los usuarios depositar ETH en su bóveda personal"
@@ -567,7 +419,6 @@
 					"notice": "Límite máximo que un usuario puede retirar en una sola transacción"
 				}
 			},
-			"notice": "Banco descentralizado que permite depositar y retirar ETH con seguridad",
 			"version": 1
 		}
 	},
@@ -588,11 +439,11 @@
 	},
 	"sources": {
 		"contracts/kipubank.sol": {
-			"keccak256": "0x5dbb1f6e2d4084bd6a2e364d35ecda91d73a6c4bb5f95038b4652ba76e5606ce",
+			"keccak256": "0x48677babe61818e9db6f2670f2f674de4e05bc41921fb64e6c9dbe98db90b626",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://6700f85354f570f9e9e0181cf02ac176cf9928bf1d72dd373f3685ded6fee25a",
-				"dweb:/ipfs/QmesLxP36z1CFWbRy3jHCnLKMG2ddrVGMUEktWUmg1Mkus"
+				"bzz-raw://fb9759589435b032ee6848b864c4b4b7bc3a18fa80e3d1792c6e302356001772",
+				"dweb:/ipfs/QmT3mKZmMChximSszEzHNUBWMLtwrSg2FxYDCnFGp4pE9A"
 			]
 		}
 	},
